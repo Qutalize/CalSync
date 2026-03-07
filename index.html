@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CalSync — ダブルブッキング防止カレンダー</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@300;400;500;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+
+<!-- ログイン画面 -->
+<div id="auth-screen" class="screen">
+  <div class="auth-bg"></div>
+  <div class="auth-container">
+    <div class="auth-logo">
+      <div class="logo-icon">📅</div>
+      <h1>CalSync</h1>
+      <p>ダブルブッキング防止カレンダー</p>
+    </div>
+    <div class="auth-tabs">
+      <button class="tab-btn active" onclick="showAuthTab('login')">ログイン</button>
+      <button class="tab-btn" onclick="showAuthTab('register')">新規登録</button>
+    </div>
+
+    <div id="login-form" class="auth-form">
+      <div class="form-group">
+        <label>ユーザー名</label>
+        <input type="text" id="login-username" placeholder="username" autocomplete="username">
+      </div>
+      <div class="form-group">
+        <label>パスワード</label>
+        <input type="password" id="login-password" placeholder="••••••" autocomplete="current-password">
+      </div>
+      <div class="demo-hint">デモ: alice / password</div>
+      <button class="btn btn-primary full-width" onclick="doLogin()">ログイン →</button>
+    </div>
+
+    <div id="register-form" class="auth-form hidden">
+      <div class="form-group">
+        <label>ユーザー名</label>
+        <input type="text" id="reg-username" placeholder="username（3文字以上）">
+      </div>
+      <div class="form-group">
+        <label>表示名</label>
+        <input type="text" id="reg-displayname" placeholder="例：田中太郎">
+      </div>
+      <div class="form-group">
+        <label>パスワード</label>
+        <input type="password" id="reg-password" placeholder="••••••（6文字以上）">
+      </div>
+      <button class="btn btn-primary full-width" onclick="doRegister()">アカウント作成 →</button>
+    </div>
+    <div id="auth-error" class="error-msg hidden"></div>
+  </div>
+</div>
+
+<!-- メインアプリ -->
+<div id="app-screen" class="screen hidden">
+
+  <!-- サイドバー -->
+  <aside class="sidebar">
+    <div class="sidebar-logo">
+      <span class="logo-emoji">📅</span>
+      <span class="logo-text">CalSync</span>
+    </div>
+
+    <nav class="sidebar-nav">
+      <button class="nav-item active" onclick="showView('calendar')" data-view="calendar">
+        <span class="nav-icon">🗓</span><span>カレンダー</span>
+      </button>
+      <button class="nav-item" onclick="showView('friends')" data-view="friends">
+        <span class="nav-icon">👥</span><span>フレンド</span>
+      </button>
+      <button class="nav-item" onclick="showView('notifications')" data-view="notifications">
+        <span class="nav-icon">🔔</span><span>通知</span>
+        <span id="notif-badge" class="badge hidden">0</span>
+      </button>
+    </nav>
+
+    <div class="sidebar-footer">
+      <div class="user-card">
+        <div class="user-avatar" id="sidebar-avatar">A</div>
+        <div class="user-info">
+          <div class="user-name" id="sidebar-name">—</div>
+          <div class="user-id" id="sidebar-username">—</div>
+        </div>
+      </div>
+      <button class="btn btn-ghost btn-sm" onclick="doLogout()">ログアウト</button>
+    </div>
+  </aside>
+
+  <!-- メインコンテンツ -->
+  <main class="main-content">
+
+    <!-- カレンダービュー -->
+    <div id="view-calendar" class="view active">
+      <div class="view-header">
+        <div class="month-nav">
+          <button class="nav-arrow" onclick="changeMonth(-1)">‹</button>
+          <h2 id="month-title">2025年1月</h2>
+          <button class="nav-arrow" onclick="changeMonth(1)">›</button>
+        </div>
+        <button class="btn btn-primary" onclick="openEventModal()">＋ 予定を追加</button>
+      </div>
+
+      <div class="conflict-banner hidden" id="conflict-banner">
+        <span class="conflict-icon">⚠️</span>
+        <span id="conflict-text">ダブルブッキングがあります</span>
+      </div>
+
+      <div class="calendar-grid" id="calendar-grid">
+        <div class="cal-header">日</div>
+        <div class="cal-header">月</div>
+        <div class="cal-header">火</div>
+        <div class="cal-header">水</div>
+        <div class="cal-header">木</div>
+        <div class="cal-header">金</div>
+        <div class="cal-header">土</div>
+      </div>
+
+      <div class="event-list-section">
+        <h3>今月の予定</h3>
+        <div id="event-list"></div>
+      </div>
+    </div>
+
+    <!-- フレンドビュー -->
+    <div id="view-friends" class="view hidden">
+      <div class="view-header">
+        <h2>フレンド</h2>
+      </div>
+      <div class="friend-search-bar">
+        <input type="text" id="friend-search-input" placeholder="🔍 ユーザー名・表示名で検索..."
+               oninput="searchUsers(this.value)">
+        <div id="search-results" class="search-dropdown hidden"></div>
+      </div>
+      <div id="friend-list" class="friend-list"></div>
+    </div>
+
+    <!-- 通知ビュー -->
+    <div id="view-notifications" class="view hidden">
+      <div class="view-header">
+        <h2>通知</h2>
+        <button class="btn btn-ghost btn-sm" onclick="markAllRead()">全て既読</button>
+      </div>
+      <div id="notification-list" class="notification-list"></div>
+    </div>
+
+  </main>
+</div>
+
+<!-- 予定追加モーダル -->
+<div id="event-modal" class="modal-overlay hidden">
+  <div class="modal">
+    <div class="modal-header">
+      <h3>予定を追加</h3>
+      <button class="modal-close" onclick="closeEventModal()">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group">
+        <label>タイトル <span class="required">*</span></label>
+        <input type="text" id="ev-title" placeholder="例：チームミーティング">
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>開始日時 <span class="required">*</span></label>
+          <input type="datetime-local" id="ev-start" onchange="checkConflictPreview()">
+        </div>
+        <div class="form-group">
+          <label>終了日時 <span class="required">*</span></label>
+          <input type="datetime-local" id="ev-end" onchange="checkConflictPreview()">
+        </div>
+      </div>
+
+      <!-- リアルタイム重複プレビュー -->
+      <div id="conflict-preview" class="conflict-preview hidden">
+        <div class="conflict-preview-icon">⚠️</div>
+        <div>
+          <div class="conflict-preview-title">ダブルブッキング検出</div>
+          <div id="conflict-preview-text"></div>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label>場所</label>
+        <input type="text" id="ev-location" placeholder="例：渋谷カフェ">
+      </div>
+      <div class="form-group">
+        <label>メモ</label>
+        <textarea id="ev-description" placeholder="詳細を入力..." rows="3"></textarea>
+      </div>
+      <div class="form-group checkbox-group">
+        <label class="checkbox-label">
+          <input type="checkbox" id="ev-public">
+          <span class="checkmark"></span>
+          フレンドに公開する
+        </label>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeEventModal()">キャンセル</button>
+      <button class="btn btn-primary" onclick="submitEvent()">追加する</button>
+    </div>
+  </div>
+</div>
+
+<!-- イベント詳細モーダル -->
+<div id="event-detail-modal" class="modal-overlay hidden">
+  <div class="modal">
+    <div class="modal-header">
+      <h3 id="detail-title">イベント詳細</h3>
+      <button class="modal-close" onclick="closeDetailModal()">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="detail-meta">
+        <div class="detail-row"><span class="detail-icon">🕐</span><span id="detail-time"></span></div>
+        <div class="detail-row" id="detail-location-row"><span class="detail-icon">📍</span><span id="detail-location"></span></div>
+        <div class="detail-row" id="detail-desc-row"><span class="detail-icon">📝</span><span id="detail-description"></span></div>
+      </div>
+
+      <div id="participation-section" class="participation-section hidden">
+        <h4>参加状況</h4>
+        <div id="participants-list" class="participants-list"></div>
+        <div class="participation-actions" id="participation-actions">
+          <button class="btn btn-success" onclick="respond('accepted')">✓ 参加</button>
+          <button class="btn btn-danger" onclick="respond('declined')">✗ 不参加</button>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer" id="detail-footer">
+      <button class="btn btn-ghost" onclick="closeDetailModal()">閉じる</button>
+      <button class="btn btn-danger btn-sm" id="delete-btn" onclick="deleteCurrentEvent()">削除</button>
+    </div>
+  </div>
+</div>
+
+<!-- トースト通知 -->
+<div id="toast-container"></div>
+
+<script src="/static/app.js"></script>
+</body>
+</html>
