@@ -3,14 +3,23 @@
 ## セットアップ
 
 ```bash
-# 1. 依存パッケージをインストール
-pip install -r requirements.txt
+Bash
+# 1. 仮想環境（名前は venv）を作成
+python3 -m venv venv
 
-# 2. アプリを起動
-python main.py
-```
-
+# 2. 仮想環境を有効化（アクティベート）
+source venv/bin/activate
+Windows の場合
+PowerShell
+# 1. 仮想環境を作成
+python -m venv venv
+# 2. 仮想環境を有効化
+.\venv\Scripts\activate
 ブラウザで http://localhost:5000 を開く
+pip install flask
+# アプリの起動
+python main.py
+
 
 ## デモアカウント
 
