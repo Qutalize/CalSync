@@ -120,16 +120,20 @@ def create_event():
     start_str = data.get("start_time", "")
     end_str = data.get("end_time", "")
     location = data.get("location", "")
-    departure_station, destination_station = location.split(" ")
+    train=data.get("train","")
+    
+
     """
     Yahoo路線情報から所要時間と料金を取得する関数
     """
 
+    "https://transit.yahoo.co.jp/?from=%7B%E5%87%BA%E7%99%BA%E5%9C%B0%7D&to=%7B%E5%88%B0%E7%9D%80%E5%9C%B0%7D&fromgid=&togid=&flatlon=&tlatlon=&via=&viacode=&y=2026&m=03&d=08&hh=13&m1=5&m2=3&type=5&ticket=ic&expkind=1&userpass=1&ws=3&s=0&al=1&shin=1&ex=1&hb=1&lb=1&sr=1&cmd=4014"
     route_url = (
         "https://transit.yahoo.co.jp/search/print?from="
-        + departure_station
-        + "&flatlon=&to="
-        + destination_station
+        + location
+        + "&to="
+        + train
+        +"&fromgid=&togid=&flatlon=&tlatlon=&via=&viacode=&y=2026&m=03&d=08&hh=13&m1=5&m2=3&type=5&ticket=ic&expkind=1&userpass=1&ws=3&s=0&al=1&shin=1&ex=1&hb=1&lb=1&sr=1&cmd=4014"
     )
 
     route_response = requests.get(route_url)
@@ -142,10 +146,13 @@ def create_event():
 
 
 
-    print("======{}から{}=======".format(departure_station, destination_station))
-    print("所要時間：" + required_time)
-    print("料金：" + fare)
+
+    #print("所要時間：" + required_time)
+    #print("料金：" + fare)
     print("URL：" + route_url)
+
+    location=location
+    train=required_time+fare
     
     
     description = data.get("description", "")
@@ -176,10 +183,10 @@ def create_event():
     try:
         c = conn.execute(
             """INSERT INTO events
-               (user_id, title, start_time, end_time, location, description, is_public)
+               (user_id, title, start_time, end_time, location,train,description, is_public)
                VALUES (?,?,?,?,?,?,?)""",
             (user["id"], title, start.isoformat(), end.isoformat(),
-             location, description, 1 if is_public else 0)
+             location,train, description, 1 if is_public else 0)
         )
         event_id = c.lastrowid
 
