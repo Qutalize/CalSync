@@ -13,6 +13,8 @@ from notification_service import notification_bp
 app = Flask(__name__, static_folder="static", template_folder="templates")
 app.secret_key = os.environ.get("SECRET_KEY", "dev-secret-key-change-in-production")
 app.config["SESSION_COOKIE_HTTPONLY"] = True
+app.config["SESSION_COOKIE_SAMESITE"] = "None"
+app.config["SESSION_COOKIE_SECURE"]   = True  
 
 # Blueprint登録
 app.register_blueprint(auth_bp)
